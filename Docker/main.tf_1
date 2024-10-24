@@ -1,0 +1,53 @@
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "3.0.2"
+    }
+  }
+}
+
+provider "docker" {}
+
+resource "docker_image" "nginx" {
+  name         = "nginx:latest"
+  keep_locally = false
+}
+
+resource "docker_network" "nginx_network" {
+  name = "nginx_network"
+}
+
+resource "docker_container" "nginx" {
+  image = docker_image.nginx.image_id
+  name  = "tutorial"
+
+  env = [
+    "Name=Nithish"
+  ]
+
+  ports {
+    internal = 80
+    external = 9091
+  }
+
+  volumes {
+    container_path = "/usr/share/nginx/html"
+    host_path      = "/home/nithish/usr/share/nginx/html"
+  }
+
+  restart = "on-failure"
+
+  networks_advanced {
+    name = docker_network.nginx_network.name
+  }
+
+  healthcheck {
+    test     = ["CMD", "curl", "-f", "http://localhost/index.html"] # Replace with your actual file path
+    interval = 30  # Check every 30 seconds
+    timeout  = 10  # Timeout after 10 seconds
+    retries  = 3   # Retry up to 3 times before marking as unhealthy
+  }
+
+
+}
